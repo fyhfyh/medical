@@ -954,8 +954,44 @@ class Hyb_ylModuleSite extends WeModuleSite {
 			}
 			include $this->template("hzanl");
 		}
+    
+  //    public function doWeblis(){
+  //    	$data = pdo_fetchall("SELECT * FROM  ims_modules_bindings");
+  //    	$key = 'title';
 
+  //       $aa = $this->assoc_unique($data, $key);
+  //       foreach ($aa as $key => $value) {
+  //       	unset($aa[$key]['eid']);
+  //       	pdo_insert("aaa",$value);
+  //       }
+  //       // print_r($aa);die;
+        
+		
+  //    }
 
+		// function assoc_unique($arr, $key) {
+
+		// $tmp_arr = array();
+
+		// foreach ($arr as $k => $v) {
+
+		// if (in_array($v[$key], $tmp_arr)) {//搜索$v[$key]是否在$tmp_arr数组中存在，若存在返回true
+
+		// unset($arr[$k]);
+
+		// } else {
+
+		// $tmp_arr[] = $v[$key];
+
+		// }
+
+		// }
+
+		// sort($arr); //sort函数对数组进行排序
+
+		// return $arr;
+
+		// }
 
 	/*
 		专家管理
@@ -1069,10 +1105,8 @@ class Hyb_ylModuleSite extends WeModuleSite {
                     'hosid'=>$hosid,
                     'nksid'=>$nksid,
                     'wzmoney'=>$_GPC['wzmoney'],
-                    'lat1'=>$lat,
-                    'lng1'=>$lng
             		);
-
+            	// print_r($data);die;
             	if (empty($id)) {
             		pdo_insert("hyb_yl_zhuanjia",$data);
             		message("添加成功!",$this->createWebUrl("team",array("op"=>"display")),"success");
@@ -4667,6 +4701,7 @@ class Hyb_ylModuleSite extends WeModuleSite {
                 }
 				include $this->template("jcxm");
 			}
+
 			public function doWebJcjg(){
 				global $_GPC, $_W;
 				load()->func("tpl");

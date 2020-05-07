@@ -59,4 +59,4 @@ if ($do == 'visible') {
     $result['message'] = '操作失败 : 没有找到指定ID';
     message($result, '', 'ajax');
 }
-//include $this->template('address/address');
+include $this->template('address/address');
