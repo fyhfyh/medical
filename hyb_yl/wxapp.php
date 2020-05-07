@@ -2988,7 +2988,7 @@ public function doPageSaveCollect(){
         global $_W, $_GPC;
         $uniacid = $_W['uniacid'];
         $id = $_REQUEST['id'];
-        $pdoselect = pdo_fetchall('SELECT * FROM' . tablename('hyb_yl_zhuanjia') . "as a left join" . tablename('hyb_yl_category') . " as b on a.z_room = b.id WHERE a.uniacid = '{$uniacid}' and a.z_room = '{$id}' ");
+        $pdoselect = pdo_fetchall('SELECT * FROM' . tablename('hyb_yl_zhuanjia') . "as a left join" . tablename('hyb_yl_addresshospitai') . " as b on a.z_room = b.id WHERE a.uniacid = '{$uniacid}' and a.z_room = '{$id}' ");
         foreach ($pdoselect as & $value) {
             $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
         }
