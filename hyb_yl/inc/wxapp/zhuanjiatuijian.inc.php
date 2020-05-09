@@ -52,7 +52,7 @@ defined('IN_IA') or exit('Access Denied');
             return $this->result(0, "success", $zjlist);
         }
         if ($op == 'post') {
-             echo '123s';
+//             echo '123s';
             $zid = $_GPC['zid'];
             $zjlist = pdo_fetch("SELECT * FROM " . tablename("hyb_yl_zhuanjia") . " where uniacid='{$uniacid}' and z_yy_sheng = 1 and zid='{$zid}'");
             return $this->result(0, "success", $zjlist);
