@@ -1083,7 +1083,7 @@ class Hyb_ylModuleSite extends WeModuleSite {
             		"z_zhiwu"=>$_GPC['z_zhiwu'],
             		"z_telephone"=>$_GPC['z_telephone'],
             		"z_zhenzhi"=>$_GPC['z_zhenzhi'],
-            		"z_room"=>$parentid,
+            		"z_room"=>$nksid,
             		"z_content"=>$_GPC['z_content'],
             		"z_tw_money"=>$_GPC['z_tw_money'],
             		"z_zx_money"=>$_GPC['z_zx_money'],
