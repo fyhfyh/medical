@@ -28,11 +28,15 @@ $data['q_category'] = $_GPC['q_category'];
 $data['tw_num'] = $_GPC['tw_num'];
 $data['tiwenlx'] = $_GPC['tiwenlx'];
 $data['dttjtime'] =strtotime('now');
+$data['sex'] = $_GPC['sex'];
+$data['age'] = $_GPC['age'];
+$data['textarea2'] = $_GPC['textarea2'];
+$data['textarea3'] = $_GPC['textarea3'];
 $leixing['leixing'] = $_GPC['leixing'];
 $leixing['time'] = date('Y-m-d H:i:s', time());
 $leixing['name'] = $_GPC['name'];
 $leixing['pay'] = $_GPC['pay'];
-
+print_r($data);die;
 $member = pdo_get('hyb_yl_mymoney', array('use_openid' => $us_openid, 'uniacid' => $uniacid));
 if ($member['countmoney'] == '') {
     $arr = array();
