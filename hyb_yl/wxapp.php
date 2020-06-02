@@ -335,7 +335,7 @@ class hyb_ylModuleWxapp extends WeModuleWxapp {
         $openid = $_REQUEST['openid'];
         //查询用户信息
         $user_curr = pdo_fetch("SELECT * FROM " . tablename("hyb_yl_userinfo") . " where uniacid=:uniacid and openid=:openid", array(":uniacid" => $uniacid, ":openid" => $openid));
-        $t_id1 = $user_curr['u_id'];
+        $t_id1 = $user_curr['openid'];
         $res = pdo_delete("hyb_yl_chat_msg", array("t_id" => $t_id1, "f_id" => $f_id));
         $res = pdo_delete("hyb_yl_chat_msg", array("t_id" => $f_id, "f_id" => $t_id1));
         return $this->result(0, "success", $res);
