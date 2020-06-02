@@ -36,7 +36,10 @@ $leixing['leixing'] = $_GPC['leixing'];
 $leixing['time'] = date('Y-m-d H:i:s', time());
 $leixing['name'] = $_GPC['name'];
 $leixing['pay'] = $_GPC['pay'];
+<<<<<<< HEAD
 print_r($data);die;
+=======
+>>>>>>> 938df90ed16368bf1a6fadb584b879c08e7b6bee
 $member = pdo_get('hyb_yl_mymoney', array('use_openid' => $us_openid, 'uniacid' => $uniacid));
 if ($member['countmoney'] == '') {
     $arr = array();
