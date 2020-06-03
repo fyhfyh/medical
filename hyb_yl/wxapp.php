@@ -1,12 +1,30 @@
 <?php
 /**
- * 行业宝模块小程序接口定义
+ * 问答小程序接口定义
  *
  * @author wangbosichuang
  * @url
  */
 defined('IN_IA') or exit('Access Denied');
 class hyb_ylModuleWxapp extends WeModuleWxapp {
+    //获取手机号解密
+    public function dePageCryptPhone(){
+        global $_W, $_GPC;
+        $uniacid = $_W['uniacid'];
+        require_once dirname(__FILE__).'/wxBizDataCrypt.php';
+        $appid = $_GPC['openid'];
+        $sessionKey = $_GPC['session_key'];
+        $encryptedData = $_GPC['encryptedData'];
+        $iv = $_GPC['iv'];
+        $pc = new WXBizDataCrypt($appid, $sessionKey);
+        $errCode = $pc->decryptData($encryptedData, $iv, $data );
+
+        if ($errCode == 0) {
+            return $this->result(0, 'success', $data);
+        } else {
+            return $this->result(0, 'error', $errCode);
+        }
+    }
     //短信验证
     public function doPageSendSms() {
         require_once dirname(__FILE__) . '/inc/SignatureHelper.php';
@@ -335,6 +353,7 @@ class hyb_ylModuleWxapp extends WeModuleWxapp {
         $openid = $_REQUEST['openid'];
         //查询用户信息
         $user_curr = pdo_fetch("SELECT * FROM " . tablename("hyb_yl_userinfo") . " where uniacid=:uniacid and openid=:openid", array(":uniacid" => $uniacid, ":openid" => $openid));
+       
         $t_id1 = $user_curr['openid'];
         $res = pdo_delete("hyb_yl_chat_msg", array("t_id" => $t_id1, "f_id" => $f_id));
         $res = pdo_delete("hyb_yl_chat_msg", array("t_id" => $f_id, "f_id" => $t_id1));
@@ -1940,7 +1959,7 @@ public function doPageSaveCollect(){
         $uniacid = $_W['uniacid'];
         $us_openid = $_GPC['us_openid'];
         $i_doctor = $_GPC['i_doctor'];
-        $selimg = pdo_fetchall("SELECT `i_img` FROM" . tablename('hyb_yl_upload_img') . "WHERE i_openid = '{$us_openid}'and uniacid ='{$uniacid}' and i_type=1 and i_doctor = '{$i_doctor}' ORDER BY i_time desc LIMIT 6 ", array("uniacid" => $uniacid));
+        $selimg = pdo_fetchall("SELECT `i_img` FROM" . tablename('hyb_yl_upload_img') . "WHERE i_openid = '{$us_openid}'and uniacid ='{$uniacid}' and i_type=1 and i_doctor = '{$i_doctor}' ORDER BY i_time desc LIMIT 15 ", array("uniacid" => $uniacid));
         foreach ($selimg as $key => $link) {
             foreach ($link as $key1 => $val) {
                 $arr = $val . ";";
@@ -3426,7 +3445,7 @@ public function doPageSaveCollect(){
         $uniacid = $_W['uniacid'];
         $openid = $_REQUEST['openid'];
         //和我对话的列表
-        $chat_list = pdo_fetchall("select a.*,c.nksname  from(select max(m_id) as m_id from". tablename('hyb_yl_chat_msg') ."where ifkf!=3 and f_id='{$openid}' group by docid ) b left join ".tablename('hyb_yl_chat_msg')." a on a.m_id=b.m_id  left join".tablename("hyb_yl_zhuanjia")."as c on c.zid=a.docid ");
+        $chat_list = pdo_fetchall("select a.*,c.nksname  from(select max(m_id) as m_id from". tablename('hyb_yl_chat_msg') ."where ifkf!=3 and t_id='{$openid}' group by docid ) b left join ".tablename('hyb_yl_chat_msg')." a on a.m_id=b.m_id  left join".tablename("hyb_yl_zhuanjia")."as c on c.zid=a.docid ");
 
         foreach ($chat_list as $key => $chat_msg) {
             $t_id = $chat_msg['t_id'];
