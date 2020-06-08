@@ -1145,7 +1145,7 @@ public function doPageSaveCollect(){
             $value['z_thumb'] = $_W['attachurl'] . $value['z_thumb'];
             $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
         }
-
+        
         return $this->result(0, "success", $res);
     }
     //查询发现页面问题详情
