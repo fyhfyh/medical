@@ -1,12 +1,36 @@
 <?php
 /**
- * 行业宝模块小程序接口定义
+ * 问答小程序接口定义
  *
  * @author wangbosichuang
  * @url
  */
 defined('IN_IA') or exit('Access Denied');
 class hyb_ylModuleWxapp extends WeModuleWxapp {
+    //获取手机号解密
+    public function doPageCryptTel(){
+        global $_W, $_GPC;
+        $uniacid = $_W['uniacid'];
+        require_once dirname(__FILE__).'/wxBizDataCrypt.php';
+        $result = pdo_fetch('SELECT * FROM ' . tablename('hyb_yl_parameter') . " where `uniacid`='{$uniacid}'");
+        $APPID = $result['appid'];
+        $SECRET = $result['appsecret'];
+        $code = trim($_GPC['code']);
+        $url = "https://api.weixin.qq.com/sns/jscode2session?appid={$APPID}&secret={$SECRET}&js_code={$code}&grant_type=authorization_code";
+        $userinfo = json_decode($this->httpGet($url));
+        $sessionKey = $userinfo->session_key;
+        $encryptedData = $_GPC['encryptedData'];
+        $iv = $_GPC['iv'];
+        $pc = new WXBizDataCrypt($APPID, $sessionKey);
+        $errCode = $pc->decryptData($encryptedData, $iv, $data );
+        $type = $this->Myzhuantype($userinfo->openid,$uniacid);
+
+        if ($errCode == 0) {
+            return $this->result(0, 'success', ['tel' => json_decode($data,true),'openid' => $userinfo->openid,'type' => $type['type']]);
+        } else {
+            return $this->result(0, 'error', $errCode);
+        }
+    }
     //短信验证
     public function doPageSendSms() {
         require_once dirname(__FILE__) . '/inc/SignatureHelper.php';
@@ -335,7 +359,8 @@ class hyb_ylModuleWxapp extends WeModuleWxapp {
         $openid = $_REQUEST['openid'];
         //查询用户信息
         $user_curr = pdo_fetch("SELECT * FROM " . tablename("hyb_yl_userinfo") . " where uniacid=:uniacid and openid=:openid", array(":uniacid" => $uniacid, ":openid" => $openid));
-        $t_id1 = $user_curr['u_id'];
+       
+        $t_id1 = $user_curr['openid'];
         $res = pdo_delete("hyb_yl_chat_msg", array("t_id" => $t_id1, "f_id" => $f_id));
         $res = pdo_delete("hyb_yl_chat_msg", array("t_id" => $f_id, "f_id" => $t_id1));
         return $this->result(0, "success", $res);
@@ -428,20 +453,37 @@ class hyb_ylModuleWxapp extends WeModuleWxapp {
         $errno = 0;
         return $this->result($errno, $message, $res);
     }
+    //身份鉴定
+    public function Myzhuantype($openid,$uniacid) {
 
-    public function doPageMyzhuan1() {
-        global $_GPC, $_W;
-        $uniacid = $_W['uniacid'];
-        $openid = $_REQUEST['openid'];
         $res = pdo_fetch('SELECT * FROM ' . tablename('hyb_yl_zhuanjia') . " where `openid`='{$openid}'and uniacid = '{$uniacid}'", array("uniacid" => $uniacid));
         if (empty($res)) {
-            echo "1";
+            //未查询到专家身份信息
+            return ['type' => 0];
         } else {
-            echo "2";
-            $res['z_thumbs'] = $_W['attachurl'] . $res['z_thumbs'];
+            //审核已通过
+            if($res['z_yy_sheng'] == 1){
+                return ['type' => 1];
+            }
+            //审核中
+            return ['type' => 0];
+//            $res['z_thumbs'] = $_W['attachurl'] . $res['z_thumbs'];
         }
         // return $this->result($errno, $message, $res);
         
+    }
+
+    public function doPageGetshenfen(){
+        global $_GPC, $_W;
+        $uniacid = $_W['uniacid'];
+        $openid = $_GPC['openid'];
+        $telephone = $_GPC['telephone'];
+        $res = pdo_fetch('SELECT * FROM ' . tablename('hyb_yl_zhuanjia') . " where `openid`='{$openid}' and z_telephone = '{$telephone}' and `z_yy_sheng` = '1' and uniacid = '{$uniacid}'", array("uniacid" => $uniacid));
+        if(!empty($res)){
+            return $this->result(0,'success',['ge' => 1]);
+        }else{
+            return $this->result(0,'success',['ge' => 0]);
+        }
     }
     //获取用户信息
     public function doPageTyMember() {
@@ -923,7 +965,7 @@ class hyb_ylModuleWxapp extends WeModuleWxapp {
     public function doPageZhuanjia() {
         global $_GPC, $_W;
         $uniacid = $_W['uniacid'];
-        $zjlist = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_zhuanjia") . " as zj left join " . tablename("hyb_yl_addresshospitai") . " as k on zj.nksid=k.id where zj.uniacid='{$uniacid}'  and zj.z_yy_sheng = 1 order by zj.sord asc", array(":uniacid" => $uniacid));
+        $zjlist = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_zhuanjia") . " as zj left join " . tablename("hyb_yl_category") . " as k on zj.z_room=k.id where zj.uniacid='{$uniacid}'  and zj.z_yy_sheng = 1 order by zj.sord asc", array(":uniacid" => $uniacid));
         foreach ($zjlist as & $value) {
             $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
             $value['url'] = unserialize($value['url']);
@@ -933,7 +975,7 @@ class hyb_ylModuleWxapp extends WeModuleWxapp {
     public function doPageZhuanjiawenz() {
         global $_GPC, $_W;
         $uniacid = $_W['uniacid'];
-        $zjlist = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_zhuanjia") . " as zj left join " . tablename("hyb_yl_addresshospitai") . " as k on zj.nksid=k.id where zj.uniacid='{$uniacid}'  and zj.z_yy_sheng = 1 and zj.z_shenfengzheng != 1 order by zj.sord asc", array(":uniacid" => $uniacid));
+        $zjlist = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_zhuanjia") . " as zj left join " . tablename("hyb_yl_category") . " as k on zj.z_room=k.id where zj.uniacid='{$uniacid}'  and zj.z_yy_sheng = 1 and zj.z_shenfengzheng != 1 order by zj.sord asc", array(":uniacid" => $uniacid));
         foreach ($zjlist as & $value) {
             $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
             $value['url'] = unserialize($value['url']);
@@ -944,7 +986,7 @@ class hyb_ylModuleWxapp extends WeModuleWxapp {
         global $_W, $_GPC;
         $uniacid = $_W['uniacid'];
         $id = $_REQUEST['id'];
-        $zj_xiangqing = pdo_fetch("SELECT * FROM " . tablename("hyb_yl_zhuanjia") . " as a left join " . tablename("hyb_yl_addresshospitai") . " as b on a.nksid=b.id where a.zid='{$id}' and a.uniacid='{$uniacid}'", array("uniacid" => $_W['uniacid']));
+        $zj_xiangqing = pdo_fetch("SELECT * FROM " . tablename("hyb_yl_zhuanjia") . " as a left join " . tablename("hyb_yl_category") . " as b on a.z_room=b.id where a.zid='{$id}' and a.uniacid='{$uniacid}'", array("uniacid" => $_W['uniacid']));
         $zj_xiangqing['z_thumbs'] = $_W['attachurl'] . $zj_xiangqing['z_thumbs'];
         $zj_xiangqing['twzixun'] =unserialize($zj_xiangqing['twzixun']);
         $zj_xiangqing['zaixianpt'] =unserialize($zj_xiangqing['twzixun']['putonguser']); 
@@ -1103,6 +1145,7 @@ public function doPageSaveCollect(){
             $value['z_thumb'] = $_W['attachurl'] . $value['z_thumb'];
             $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
         }
+
         return $this->result(0, "success", $res);
     }
     //查询发现页面问题详情
@@ -1137,12 +1180,40 @@ public function doPageSaveCollect(){
     public function doPageQusetiontype() {
         global $_W, $_GPC;
         $uniacid = $_W['uniacid'];
-        $total = pdo_fetchcolumn('SELECT COUNT(*) FROM ' . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . "as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . "as c on c.id = b.z_room left join " . tablename('hyb_yl_overquestion') . "as d on d.useropenid =a.user_openid where  a.uniacid = '{$uniacid}' and a.if_over = 1 order by a.qid desc", array(':uniacid' => $uniacid));
+
+        $total = pdo_fetchcolumn('SELECT COUNT(*) FROM ' . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . " as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . " as c on c.id = b.z_room left join " . tablename('hyb_yl_overquestion') . " as d on d.useropenid =a.user_openid where  a.uniacid = '{$uniacid}' and a.if_over = 1  order by a.qid desc", array(':uniacid' => $uniacid));
         $pindex = max(1, intval($_GPC['page']));
         $pagesize = 6;
         $pager = pagination($total, $pindex, $pagesize);
         $p = ($pindex - 1) * $pagesize;
-        $res = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . "as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . "as c on c.id = b.z_room left join " . tablename('hyb_yl_overquestion') . "as d on d.useropenid =a.user_openid where  a.uniacid = '{$uniacid}' and a.if_over = 1 order by a.qid desc limit " . $p . "," . $pagesize);
+        $res = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . "as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . " as c on c.id = b.z_room left join " . tablename('hyb_yl_overquestion') . " as d on d.useropenid =a.user_openid where  a.uniacid = '{$uniacid}' and a.if_over = 1  order by a.qid desc limit " . $p . " , " . $pagesize);
+
+        foreach ($res as & $value) {
+            $value['user_picture'] = unserialize($value['user_picture']);
+            $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
+            $num = count($value['user_picture']);
+            for ($i = 0;$i < $num;$i++) {
+                $value['user_picture'][$i] = $_W['attachurl'] . $value['user_picture'][$i];
+            }
+        }
+        return $this->result(0, "success", $res);
+    }
+    //按分类筛选--问答
+    public function doPageQusetionSettype() {
+        global $_W, $_GPC;
+        $uniacid = $_W['uniacid'];
+        $type_id = $_GPC['type_id'];
+        if(!empty($type_id)){
+            $where = ' c.id = '.$type_id;
+        }else{
+            $where = ' 0 = 0 ';
+        }
+
+        $pindex = max(1, intval($_GPC['page']));
+        $pagesize = 6;
+        $p = ($pindex - 1) * $pagesize;
+        $res = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . "as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . " as c on c.id = b.z_room  where  a.uniacid = '{$uniacid}' and a.if_over = 1  and ".$where." order by a.qid desc limit " . $p . " , " . $pagesize);
+
         foreach ($res as & $value) {
             $value['user_picture'] = unserialize($value['user_picture']);
             $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
@@ -1175,15 +1246,20 @@ public function doPageSaveCollect(){
         $id = intval($_REQUEST['id']);
         if (!empty($id)) {
             //1.查询一级
-           $erji1 = pdo_fetchall('SELECT * FROM' . tablename('hyb_yl_category') . "where uniacid='{$uniacid}' and parentid='{$id}'");
+           $erji1 = pdo_fetchall('SELECT * FROM' . tablename('hyb_yl_category') . "where uniacid='{$uniacid}' and id='{$id}'");
            $arrinfo =array();
+
            foreach ($erji1 as & $value) {
 
             //循环查询所有二级下的公开问题
             $erjid1 = $value['id'];        
             $allcoment = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . "as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . "as c on c.id = b.z_room  where  a.uniacid = '{$uniacid}' and a.if_over = 1 and (a.q_category='{$id}' or a.q_category='{$erjid1}') order by a.qid desc");
             $arrinfo[] = $allcoment;
-           }    
+           }
+
+           if(empty($allcoment)){
+               return $this->result(0, "success", []);
+           }
             $allcoment['data'] = array_filter($arrinfo);
             $arr2 = array();
             //循环遍历三维数组$arr3
@@ -1192,6 +1268,7 @@ public function doPageSaveCollect(){
                     $arr2[] = $v;
                 }
             }
+
             $werw = array_unique($arr2);
             foreach ($werw as & $v2) {
                 foreach ($v2 as & $v1) {
@@ -1219,7 +1296,6 @@ public function doPageSaveCollect(){
                     $kidinfo = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . "as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . "as c on c.id = b.z_room left join " . tablename('hyb_yl_overquestion') . "as d on d.useropenid =a.user_openid where  a.uniacid = '{$uniacid}' and a.if_over = 1 and d.kid='{$erjid}'order by a.qid desc");
                     $arr[] = $kidinfo;
                 }
-
 
                 $allcoment['data'] = array_filter($arr);
                 $arr2 = array();
@@ -1256,6 +1332,8 @@ public function doPageSaveCollect(){
 
         } else {
             $allcoment1 = pdo_fetchall("SELECT * FROM " . tablename("hyb_yl_question") . " as a left join " . tablename("hyb_yl_zhuanjia") . "as b on a.p_id=b.zid left join" . tablename('hyb_yl_category') . "as c on c.id = b.z_room left join " . tablename('hyb_yl_overquestion') . "as d on d.useropenid =a.user_openid where  a.uniacid = '{$uniacid}' and a.if_over = 1  group by a.user_openid desc");
+
+//            var_dump($allcoment1);die;
             foreach ($allcoment1 as & $value) {
                 $value['user_picture'] = unserialize($value['user_picture']);
                 $value['z_thumbs'] = $_W['attachurl'] . $value['z_thumbs'];
@@ -3426,7 +3504,7 @@ public function doPageSaveCollect(){
         $uniacid = $_W['uniacid'];
         $openid = $_REQUEST['openid'];
         //和我对话的列表
-        $chat_list = pdo_fetchall("select a.*,c.nksname  from(select max(m_id) as m_id from". tablename('hyb_yl_chat_msg') ."where ifkf!=3 and f_id='{$openid}' group by docid ) b left join ".tablename('hyb_yl_chat_msg')." a on a.m_id=b.m_id  left join".tablename("hyb_yl_zhuanjia")."as c on c.zid=a.docid ");
+        $chat_list = pdo_fetchall("select a.*,c.nksname  from(select max(m_id) as m_id from". tablename('hyb_yl_chat_msg') ."where ifkf!=3 and t_id='{$openid}' group by docid ) b left join ".tablename('hyb_yl_chat_msg')." a on a.m_id=b.m_id  left join".tablename("hyb_yl_zhuanjia")."as c on c.zid=a.docid ");
 
         foreach ($chat_list as $key => $chat_msg) {
             $t_id = $chat_msg['t_id'];
@@ -4042,7 +4120,7 @@ public function doPageSaveCollect(){
         $data['q_time'] = date('Y-m-d H:i:s', time());
         $res = pdo_insert('hyb_yl_question', $data);
         $member = pdo_update('hyb_yl_question', array('yuedu' => 1), array('qid' => $qid, 'uniacid' => $uniacid));
-        $getupdate = pdo_update("hyb_yl_question", $datas, array('savant_openid' => $selectdata['savant_openid'], 'uniacid' => $uniacid, 'qid' => $qid));
+        $getupdate = pdo_update("hyb_yl_question", $data, array('savant_openid' => $data['savant_openid'], 'uniacid' => $uniacid, 'qid' => $qid));
         $docinfo = pdo_getcolumn('hyb_yl_zhuanjia', array('zid' => $zid, 'uniacid' => $uniacid), 'helpnum');
         $datadoc = array('helpnum' => $docinfo + 1);
         pdo_update('hyb_yl_zhuanjia', $datadoc, array('zid' => $zid, 'uniacid' => $uniacid));

@@ -1001,7 +1001,7 @@ class Hyb_ylModuleSite extends WeModuleSite {
 			global $_GPC, $_W;
 			load()->func("tpl");
 			$uniacid = $_W['uniacid'];
-			$subcatess = pdo_fetchall("SELECT * FROM " . tablename('hyb_yl_addresshospitai') . " WHERE uniacid = '{$uniacid}' ");
+			$subcatess = pdo_fetchall("SELECT * FROM " . tablename('hyb_yl_category') . " WHERE uniacid = '{$uniacid}' ");
 			$parentpfxm = array();  
 			$childrenpfxm = array();  
 			if (!empty($subcatess)) {  
@@ -1013,19 +1013,19 @@ class Hyb_ylModuleSite extends WeModuleSite {
 						$parentpfxm[$catepfxm['id']] = $catepfxm;  
 					}  
 				}
-			} 
+			}
 			$op = $_GPC['op'];
 			$ops = array('display', 'post',"delete","visible");
 			$op = in_array($op, $ops) ? $op : 'display';
 			if ($op == "display") {
-				$total = pdo_fetchcolumn('SELECT COUNT(*) FROM ' .tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_addresshospitai")." as b on a.z_room=b.id where a.uniacid=:uniacid order by a.sord asc",array(":uniacid"=>$_W['uniacid']));
+				$total = pdo_fetchcolumn('SELECT COUNT(*) FROM ' .tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_category")." as b on a.z_room=b.id where a.uniacid=:uniacid order by a.sord asc",array(":uniacid"=>$_W['uniacid']));
 
 				$pindex = max(1, intval($_GPC['page'])); 
 				$pagesize = 10;
 				$pager = pagination($total,$pindex,$pagesize);
 				$p = ($pindex-1) * $pagesize; 
 
-				$products = pdo_fetchall("SELECT * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_addresshospitai")." as b on a.z_room=b.id where a.uniacid=:uniacid order by a.sord asc limit ".$p.",".$pagesize ,array(":uniacid"=>$_W['uniacid']));
+				$products = pdo_fetchall("SELECT * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_category")." as b on a.z_room=b.id where a.uniacid=:uniacid order by a.sord asc limit ".$p.",".$pagesize ,array(":uniacid"=>$_W['uniacid']));
 
 				if(checksubmit("paixu")){
 					$zid=$_GPC['zid'];
@@ -1045,13 +1045,14 @@ class Hyb_ylModuleSite extends WeModuleSite {
 			$id = $_GPC['zid'];//医生ID
             $z_yy_money =$_GPC['z_yy_money'];//医生挂号金额
             $z_room =$_GPC['z_room'];//医生所在科室
-            $get =  pdo_fetch("SELECT  * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_addresshospitai")." as b on a.nksid=b.id where a.zid='{$id}' and a.uniacid='{$uniacid}'",array("uniacid"=>$_W['uniacid']));
+//                var_dump($z_room);die;
+            $get =  pdo_fetch("SELECT  * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_category")." as b on a.nksid=b.id where a.zid='{$id}' and a.uniacid='{$uniacid}'",array("uniacid"=>$_W['uniacid']));
 
             if(!empty($get['openid'])){
-            	$items =  pdo_fetch("SELECT * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_addresshospitai")." as b on a.nksid=b.id left join".tablename('hyb_yl_userinfo')." as c on c.openid = a.openid where a.zid='{$id}' and a.uniacid='{$uniacid}'",array("uniacid"=>$_W['uniacid']));
+            	$items =  pdo_fetch("SELECT * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_category")." as b on a.nksid=b.id left join".tablename('hyb_yl_userinfo')." as c on c.openid = a.openid where a.zid='{$id}' and a.uniacid='{$uniacid}'",array("uniacid"=>$_W['uniacid']));
             	
             }else{
-            	$items =  pdo_fetch("SELECT * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_addresshospitai")." as b on a.nksid=b.id where a.zid='{$id}' and a.uniacid='{$uniacid}'",array("uniacid"=>$_W['uniacid']));
+            	$items =  pdo_fetch("SELECT * FROM ".tablename("hyb_yl_zhuanjia")." as a left join ".tablename("hyb_yl_category")." as b on a.nksid=b.id where a.zid='{$id}' and a.uniacid='{$uniacid}'",array("uniacid"=>$_W['uniacid']));
             }
             $items['z_thumb'] = unserialize($items['z_thumb']);
             $items['url']=unserialize($items['url']);
@@ -1060,10 +1061,10 @@ class Hyb_ylModuleSite extends WeModuleSite {
             	$hosid = $_GPC['team']['parentid'];//医院ID
             	$nksid = $_GPC['team']['childid'];//医院ID
             	//查询医院经纬度
-            	$docjwd = pdo_get('hyb_yl_addresshospitai',array('id'=>$hosid),array('lat','lng'));
-            	
-            	$lat = $docjwd['lat'];
-            	$lng = $docjwd['lng'];
+//            	$docjwd = pdo_get('hyb_yl_addresshospitai',array('id'=>$hosid),array('lat','lng'));
+//
+//            	$lat = $docjwd['lat'];
+//            	$lng = $docjwd['lng'];
             	
             	$telmoney=$_GPC['telmoney'];
             	$timeshic=$_GPC['timeshic'];
@@ -1074,7 +1075,7 @@ class Hyb_ylModuleSite extends WeModuleSite {
             		$newdate[$key]['telmoney']=$telmoney[$key];   
             	}
 		        //查询父类名称
-            	$parentname = pdo_fetch("SELECT * FROM ".tablename("hyb_yl_addresshospitai")." WHERE uniacid=:uniacid and parentid=:parentid",array(":uniacid"=>$uniacid,":parentid"=>$hosid));
+//            	$parentname = pdo_fetch("SELECT * FROM ".tablename("hyb_yl_category")." WHERE uniacid=:uniacid and parentid=:parentid",array(":uniacid"=>$uniacid,":parentid"=>$hosid));
 
             	$data = array(
             		"uniacid"=>$_W['uniacid'],
@@ -1083,7 +1084,7 @@ class Hyb_ylModuleSite extends WeModuleSite {
             		"z_zhiwu"=>$_GPC['z_zhiwu'],
             		"z_telephone"=>$_GPC['z_telephone'],
             		"z_zhenzhi"=>$_GPC['z_zhenzhi'],
-            		"z_room"=>$parentid,
+            		"z_room"=>$z_room,
             		"z_content"=>$_GPC['z_content'],
             		"z_tw_money"=>$_GPC['z_tw_money'],
             		"z_zx_money"=>$_GPC['z_zx_money'],
